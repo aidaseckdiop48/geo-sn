@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIG Équipements Scolaires - NIORO</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- Leaflet Draw -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+  
+  <!-- Leaflet MiniMap -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.min.js"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+
+    /* Navigation supérieure */
+    .top-nav {
+      height: 70px;
+      background: linear-gradient(135deg, #be185d 0%, #db2777 50%, #9f1239 100%);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 30px;
+      box-shadow: 0 4px 20px rgba(190, 24, 93, 0.4);
+      position: relative;
+      z-index: 1000;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .flag {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(to right, #0e7c3a 33%, #fdef42 33%, #fdef42 66%, #c8102e 66%);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .nav-title h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-menu {
+      display: flex;
+      gap: 25px;
+      align-items: center;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 15px;
+      border-radius: 8px;
+      transition: all 0.3s;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .nav-item.active {
+      background: rgba(255, 255, 255, 0.25);
+      font-weight: 600;
+      opacity: 1;
+    }
+
+    .nav-icons {
+      display: flex;
+      gap: 15px;
+    }
+
+    .nav-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .nav-icon:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.1);
+    }
+
+    /* Container principal */
+    .container {
+      display: flex;
+      height: calc(100vh - 70px);
+    }
+
+    /* Panneau de contrôle */
+    .control-panel {
+      width: 380px;
+      background: linear-gradient(180deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%);
+      border-right: 1px solid #fbcfe8;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 4px 0 20px rgba(190, 24, 93, 0.15);
+      position: relative;
+      z-index: 500;
+    }
+
+    .panel-header {
+      background: linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%);
+      color: white;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(219, 39, 119, 0.4);
+    }
+
+    .panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    /* Recherche */
+    .search-box {
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 14px 45px 14px 20px;
+      border: 2px solid #fbcfe8;
+      border-radius: 12px;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.3s;
+      background: white;
+    }
+
+    .search-box input:focus {
+      border-color: #ec4899;
+      box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .search-box i {
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #ec4899;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+
+    /* Cartes statistiques */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .stat-card {
+      padding: 20px;
+      border-radius: 16px;
+      color: white;
+      text-align: center;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .stat-card h2 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .stat-card p {
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0.95;
+    }
+
+    .stat-purple { 
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+    }
+    .stat-pink { 
+      background: linear-gradient(135deg, #ec4899, #db2777);
+      box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+    }
+    .stat-cyan { 
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+    }
+    .stat-green { 
+      background: linear-gradient(135deg, #10b981, #16a34a);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+    }
+
+    /* Section gestion des couches */
+    .layers-section h3 {
+      color: #be185d;
+      font-size: 16px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .layer-item {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .layer-item:hover {
+      border-color: #ec4899;
+      box-shadow: 0 4px 15px rgba(236, 72, 153, 0.2);
+      transform: translateX(5px);
+    }
+
+    .layer-checkbox {
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      accent-color: #ec4899;
+    }
+
+    .layer-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .layer-info {
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .layer-name {
+      font-weight: 600;
+      color: #1f2937;
+      font-size: 14px;
+    }
+
+    .layer-count {
+      background: linear-gradient(135deg, #ec4899, #db2777);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Carte */
+    #map {
+      flex: 1;
+      position: relative;
+    }
+
+    /* Panneau légende */
+    .legend-panel {
+      position: absolute;
+      right: 20px;
+      bottom: 150px;
+      background: rgba(255, 255, 255, 0.98);
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+      min-width: 220px;
+      z-index: 400;
+      border-top: 4px solid #ec4899;
+      backdrop-filter: blur(10px);
+    }
+
+    .legend-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #be185d;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 2px solid #fce7f3;
+      padding-bottom: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: #374151;
+      padding: 5px;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .legend-item:hover {
+      background: #fce7f3;
+      padding-left: 10px;
+    }
+
+    .legend-symbol {
+      font-size: 18px;
+    }
+
+    /* Scrollbar personnalisée */
+    .panel-content::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .panel-content::-webkit-scrollbar-track {
+      background: linear-gradient(180deg, #fce7f3, #fbcfe8);
+      border-radius: 10px;
+    }
+
+    .panel-content::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #ec4899, #db2777);
+      border-radius: 10px;
+      border: 2px solid #fce7f3;
+    }
+
+    .panel-content::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #db2777, #be185d);
+    }
+
+    /* Bouton toggle panneau */
+    .toggle-panel {
+      position: absolute;
+      left: 380px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 60px;
+      background: linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%);
+      border-radius: 0 10px 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 501;
+      color: white;
+      box-shadow: 2px 0 15px rgba(236, 72, 153, 0.5);
+      transition: all 0.3s;
+    }
+
+    .toggle-panel:hover {
+      width: 38px;
+      box-shadow: 2px 0 20px rgba(236, 72, 153, 0.7);
+    }
+
+    .control-panel.collapsed {
+      margin-left: -380px;
+    }
+
+    .control-panel.collapsed + .toggle-panel {
+      left: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-menu {
+        display: none;
+      }
+      
+      .control-panel {
+        width: 100%;
+        position: absolute;
+        z-index: 1001;
+      }
+    }
+
+    /* Modales */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 2000;
+      backdrop-filter: blur(5px);
+    }
+
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, #ec4899, #db2777, #be185d);
+      color: white;
+      padding: 25px 30px;
+      border-radius: 20px 20px 0 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .modal-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+
+    .modal-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: rotate(90deg);
+    }
+
+    .modal-body {
+      padding: 30px;
+    }
+
+    .about-section {
+      margin-bottom: 25px;
+    }
+
+    .about-section h3 {
+      color: #be185d;
+      margin-bottom: 12px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .about-section p {
+      color: #4b5563;
+      line-height: 1.8;
+      margin-bottom: 10px;
+    }
+
+    .profile-card {
+      background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+      padding: 25px;
+      border-radius: 16px;
+      margin-bottom: 25px;
+      border-left: 5px solid #ec4899;
+    }
+
+    .profile-card h3 {
+      color: #be185d;
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .profile-card p {
+      color: #831843;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    /* Catalogue */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .data-table th {
+      background: linear-gradient(135deg, #ec4899, #db2777);
+      color: white;
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .data-table td {
+      padding: 15px;
+      border-bottom: 1px solid #fce7f3;
+      color: #374151;
+    }
+
+    .data-table tr:hover {
+      background: #fef2f8;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-pink {
+      background: #fce7f3;
+      color: #be185d;
+    }
+
+    .badge-green {
+      background: #d1fae5;
+      color: #16a34a;
+    }
+
+    .badge-blue {
+      background: #dbeafe;
+      color: #2563eb;
+    }
+
+    /* Graphiques */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 25px;
+      margin-top: 20px;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      border-top: 4px solid #ec4899;
+    }
+
+    .chart-card h4 {
+      color: #be185d;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+
+    .chart-bar {
+      background: #fce7f3;
+      height: 30px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ec4899, #db2777);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 10px;
+      color: white;
+      font-weight: 600;
+      font-size: 13px;
+      transition: width 1s ease;
+    }
+
+    .chart-bar-label {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #831843;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px;
+      background: #fef2f8;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .stat-item-label {
+      color: #831843;
+      font-weight: 600;
+    }
+
+    .stat-item-value {
+      color: #be185d;
+      font-weight: 700;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navigation supérieure -->
+<div class="top-nav">
+  <div class="nav-left">
+    <div class="flag">⭐</div>
+    <div class="nav-title">
+      <h1>SIG Équipements Scolaires - NIORO</h1>
+    </div>
+  </div>
+  
+  <div class="nav-menu">
+    <div class="nav-item active" onclick="closeAllModals()"><i class="fas fa-home"></i> Accueil</div>
+    <div class="nav-item" onclick="openModal('aboutModal')"><i class="fas fa-info-circle"></i> À propos</div>
+    <div class="nav-item" onclick="openModal('catalogueModal')"><i class="fas fa-th"></i> Catalogue</div>
+    <div class="nav-item" onclick="openModal('graphiquesModal')"><i class="fas fa-chart-bar"></i> Graphiques</div>
+    <div class="nav-item" onclick="downloadData()"><i class="fas fa-download"></i> Télécharger</div>
+  </div>
+
+  <div class="nav-icons">
+    <div class="nav-icon"><i class="fas fa-bell"></i></div>
+    <div class="nav-icon"><i class="fas fa-user"></i></div>
+    <div class="nav-icon"><i class="fas fa-globe"></i></div>
+    <div class="nav-icon"><i class="fas fa-map-marker-alt"></i></div>
+  </div>
+</div>
+
+<!-- Container principal -->
+<div class="container">
+  
+  <!-- Panneau de contrôle -->
+  <div class="control-panel" id="controlPanel">
+    <div class="panel-header">
+      <i class="fas fa-layer-group"></i>
+      Panneau de Contrôle
+    </div>
+    
+    <div class="panel-content">
+      <!-- Recherche -->
+      <div class="search-box">
+        <input type="text" placeholder="Rechercher un lieu..." id="searchInput">
+        <i class="fas fa-search" id="searchIcon"></i>
+      </div>
+
+      <!-- Statistiques -->
+      <div class="stats-grid">
+        <div class="stat-card stat-purple">
+          <h2>1250</h2>
+          <p>Total</p>
+        </div>
+        <div class="stat-card stat-pink">
+          <h2>20</h2>
+          <p>Écoles</p>
+        </div>
+        <div class="stat-card stat-cyan">
+          <h2>727</h2>
+          <p>Routes</p>
+        </div>
+        <div class="stat-card stat-green">
+          <h2>499</h2>
+          <p>Localités</p>
+        </div>
+      </div>
+
+      <!-- Gestion des couches -->
+      <div class="layers-section">
+        <h3>
+          <i class="fas fa-layer-group"></i>
+          Gestion des couches
+        </h3>
+        <div id="layersList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bouton toggle -->
+  <div class="toggle-panel" id="toggleBtn">
+    <i class="fas fa-chevron-left"></i>
+  </div>
+
+  <!-- Carte -->
+  <div id="map"></div>
+  
+  <!-- Légende -->
+  <div class="legend-panel">
+    <div class="legend-title">
+      <i class="fas fa-list"></i>
+      Légende
+    </div>
+    <div class="legend-item">
+      <span class="legend-symbol" style="color:#ec4899">●</span>
+      <span>Localités</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-symbol" style="color:#16a34a">●</span>
+      <span>Écoles</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-symbol" style="color:#f97316">—</span>
+      <span>Routes</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-symbol" style="color:#7c3aed">▭</span>
+      <span>Arrondissements</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-symbol" style="color:#dc2626">▭</span>
+      <span>Département</span>
+    </div>
+  </div>
+</div>
+
+<!-- Modal À propos -->
+<div class="modal" id="aboutModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2><i class="fas fa-info-circle"></i> À propos</h2>
+      <button class="modal-close" onclick="closeModal('aboutModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="profile-card">
+        <h3>👩‍🎓 AIDA SECK DIOP</h3>
+        <p>Étudiante en Licence 3 Géomatique</p>
+      </div>
+
+      <div class="about-section">
+        <h3><i class="fas fa-map-marked-alt"></i> Projet SIG Scolaire - NIORO</h3>
+        <p>
+          Ce Système d'Information Géographique (SIG) a été développé dans le cadre d'un projet académique 
+          visant à cartographier et analyser les infrastructures scolaires du département de NIORO.
+        </p>
+        <p>
+          L'objectif principal est de fournir un outil interactif permettant de visualiser la répartition 
+          géographique des écoles, des routes, des localités et des arrondissements.
+        </p>
+      </div>
+
+      <div class="about-section">
+        <h3><i class="fas fa-bullseye"></i> Objectifs du projet</h3>
+        <p>• Cartographie des équipements scolaires</p>
+        <p>• Analyse spatiale des infrastructures éducatives</p>
+        <p>• Aide à la planification et à la prise de décision</p>
+        <p>• Accessibilité et visualisation des données géographiques</p>
+      </div>
+
+      <div class="about-section">
+        <h3><i class="fas fa-tools"></i> Technologies utilisées</h3>
+        <p>• Leaflet.js pour la cartographie interactive</p>
+        <p>• GeoJSON pour les données géospatiales</p>
+        <p>• HTML5, CSS3 et JavaScript</p>
+        <p>• OpenStreetMap comme fond de carte</p>
+      </div>
+
+      <div class="about-section">
+        <h3><i class="fas fa-graduation-cap"></i> Formation</h3>
+        <p>
+          <strong>Licence 3 Géomatique</strong><br>
+          Spécialisation en systèmes d'information géographique, cartographie numérique et analyse spatiale.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Catalogue -->
+<div class="modal" id="catalogueModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2><i class="fas fa-th"></i> Catalogue de données</h2>
+      <button class="modal-close" onclick="closeModal('catalogueModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="about-section">
+        <h3><i class="fas fa-database"></i> Données disponibles</h3>
+        <p>Ensemble des couches géographiques du département de NIORO</p>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Couche</th>
+            <th>Type</th>
+            <th>Nombre</th>
+            <th>Format</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Département</strong></td>
+            <td><span class="badge badge-pink">Polygone</span></td>
+            <td>1</td>
+            <td>GeoJSON</td>
+          </tr>
+          <tr>
+            <td><strong>Arrondissements</strong></td>
+            <td><span class="badge badge-pink">Polygone</span></td>
+            <td>4</td>
+            <td>GeoJSON</td>
+          </tr>
+          <tr>
+            <td><strong>Routes</strong></td>
+            <td><span class="badge badge-blue">Ligne</span></td>
+            <td>727</td>
+            <td>GeoJSON</td>
+          </tr>
+          <tr>
+            <td><strong>Localités</strong></td>
+            <td><span class="badge badge-green">Point</span></td>
+            <td>499</td>
+            <td>GeoJSON</td>
+          </tr>
+          <tr>
+            <td><strong>Écoles</strong></td>
+            <td><span class="badge badge-green">Point</span></td>
+            <td>20</td>
+            <td>GeoJSON</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="about-section" style="margin-top: 30px;">
+        <h3><i class="fas fa-info-circle"></i> Informations techniques</h3>
+        <div class="stat-item">
+          <span class="stat-item-label">Système de coordonnées</span>
+          <span class="stat-item-value">WGS84</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-item-label">Projection</span>
+          <span class="stat-item-value">EPSG:4326</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-item-label">Total des entités</span>
+          <span class="stat-item-value">1251</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-item-label">Dernière mise à jour</span>
+          <span class="stat-item-value">2025</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Graphiques -->
+<div class="modal" id="graphiquesModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2><i class="fas fa-chart-bar"></i> Graphiques et statistiques</h2>
+      <button class="modal-close" onclick="closeModal('graphiquesModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h4><i class="fas fa-layer-group"></i> Répartition par type de données</h4>
+          <div class="chart-bar">
+            <span class="chart-bar-label">Localités</span>
+            <div class="chart-bar-fill" style="width: 40%">499</div>
+          </div>
+          <div class="chart-bar">
+            <span class="chart-bar-label">Routes</span>
+            <div class="chart-bar-fill" style="width: 58%">727</div>
+          </div>
+          <div class="chart-bar">
+            <span class="chart-bar-label">Écoles</span>
+            <div class="chart-bar-fill" style="width: 1.6%">20</div>
+          </div>
+          <div class="chart-bar">
+            <span class="chart-bar-label">Arrondissements</span>
+            <div class="chart-bar-fill" style="width: 0.32%">4</div>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <h4><i class="fas fa-chart-pie"></i> Statistiques générales</h4>
+          <div class="stat-item">
+            <span class="stat-item-label">Total entités</span>
+            <span class="stat-item-value">1250</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-item-label">Écoles</span>
+            <span class="stat-item-value">20</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-item-label">Routes</span>
+            <span class="stat-item-value">727</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-item-label">Localités</span>
+            <span class="stat-item-value">499</span>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <h4><i class="fas fa-school"></i> Analyse des écoles</h4>
+          <div class="stat-item">
+            <span class="stat-item-label">Nombre total d'écoles</span>
+            <span class="stat-item-value">20</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-item-label">Taux de couverture</span>
+            <span class="stat-item-value">4%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-item-label">Écoles par localité</span>
+            <span class="stat-item-value">1:25</span>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <h4><i class="fas fa-road"></i> Réseau routier</h4>
+          <div class="stat-item">
+            <span class="stat-item-label">Total routes</span>
+            <span class="stat-item-value">727</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-item-label">Connectivité</span>
+            <span class="stat-item-value">Élevée</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-item-label">Accessibilité</span>
+            <span class="stat-item-value">Bonne</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-section" style="margin-top: 30px;">
+        <h3><i class="fas fa-chart-line"></i> Analyse spatiale</h3>
+        <p>
+          Le département de NIORO compte 499 localités réparties sur 4 arrondissements. 
+          Le réseau routier de 727 segments assure une connectivité importante entre les différentes zones.
+        </p>
+        <p>
+          Les 20 écoles identifiées représentent environ 4% du total des entités cartographiées, 
+          ce qui indique une présence relativement faible d'infrastructures scolaires par rapport 
+          au nombre de localités.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Initialisation de la carte
+  const map = L.map('map').setView([13.75, -15.78], 10);
+  
+  // Fond de carte
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Configuration des couches
+  const configs = [
+    { 
+      id: 'departement', 
+      name: 'Départements', 
+      color: '#dc2626', 
+      file: 'data/Departement.geojson',
+      count: 1,
+      icon: 'fa-map'
+    },
+    { 
+      id: 'arrondissements', 
+      name: 'Arrondissements', 
+      color: '#7c3aed', 
+      file: 'data/Arrondissement.geojson',
+      count: 4,
+      icon: 'fa-vector-square'
+    },
+    { 
+      id: 'routes', 
+      name: 'Routes', 
+      color: '#f97316', 
+      file: 'data/Route.geojson',
+      count: 727,
+      icon: 'fa-road'
+    },
+    { 
+      id: 'localites', 
+      name: 'Localités', 
+      color: '#ec4899', 
+      file: 'data/Localite.geojson',
+      count: 499,
+      icon: 'fa-map-pin'
+    },
+    { 
+      id: 'ecoles', 
+      name: 'Écoles', 
+      color: '#16a34a', 
+      file: 'data/Ecole.geojson',
+      count: 20,
+      icon: 'fa-school'
+    }
+  ];
+
+  const layers = {};
+  const layersList = document.getElementById('layersList');
+
+  // Création des éléments de couche
+  configs.forEach(cfg => {
+    const layerItem = document.createElement('div');
+    layerItem.className = 'layer-item';
+    layerItem.innerHTML = `
+      <input type="checkbox" class="layer-checkbox" checked id="check-${cfg.id}">
+      <div class="layer-color" style="background:${cfg.color}"></div>
+      <div class="layer-info">
+        <span class="layer-name">
+          <i class="fas ${cfg.icon}"></i> ${cfg.name}
+        </span>
+        <span class="layer-count">${cfg.count}</span>
+      </div>
+    `;
+    layersList.appendChild(layerItem);
+
+    // Chargement des données GeoJSON
+    fetch(cfg.file)
+      .then(r => r.json())
+      .then(data => {
+        layers[cfg.id] = L.geoJSON(data, {
+          style: feature => ({
+            color: cfg.color,
+            weight: 3,
+            fillOpacity: 0.3,
+            fillColor: cfg.color
+          }),
+          pointToLayer: (feature, latlng) => {
+            return L.circleMarker(latlng, {
+              radius: 7,
+              fillColor: cfg.color,
+              color: '#fff',
+              weight: 2,
+              fillOpacity: 0.9
+            });
+          },
+          onEachFeature: (feature, layer) => {
+            if (feature.properties) {
+              let popupContent = '<div style="font-family:sans-serif;padding:5px;">';
+              for (let key in feature.properties) {
+                popupContent += `<b>${key}:</b> ${feature.properties[key]}<br>`;
+              }
+              popupContent += '</div>';
+              layer.bindPopup(popupContent);
+            }
+          }
+        }).addTo(map);
+
+        // Gestion checkbox
+        const checkbox = document.getElementById(`check-${cfg.id}`);
+        checkbox.addEventListener('change', e => {
+          if (e.target.checked) {
+            map.addLayer(layers[cfg.id]);
+          } else {
+            map.removeLayer(layers[cfg.id]);
+          }
+        });
+
+        // Click sur la carte pour toggle
+        layerItem.addEventListener('click', e => {
+          if (e.target !== checkbox) {
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+          }
+        });
+      })
+      .catch(err => {
+        console.warn('Impossible de charger', cfg.file, err);
+        layerItem.style.opacity = '0.5';
+      });
+  });
+
+  // Outils de dessin
+  const drawnItems = new L.FeatureGroup();
+  map.addLayer(drawnItems);
+
+  const drawControl = new L.Control.Draw({
+    position: 'topleft',
+    draw: {
+      polygon: true,
+      polyline: true,
+      rectangle: true,
+      circle: true,
+      marker: true,
+      circlemarker: false
+    },
+    edit: {
+      featureGroup: drawnItems,
+      remove: true
+    }
+  });
+  map.addControl(drawControl);
+
+  map.on(L.Draw.Event.CREATED, function (event) {
+    const layer = event.layer;
+    drawnItems.addLayer(layer);
+  });
+
+  // MiniMap
+  const miniMapLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+  const miniMap = new L.Control.MiniMap(miniMapLayer, {
+    toggleDisplay: true,
+    minimized: false,
+    position: 'bottomleft',
+    width: 150,
+    height: 150
+  }).addTo(map);
+
+  // Toggle panneau
+  const toggleBtn = document.getElementById('toggleBtn');
+  const controlPanel = document.getElementById('controlPanel');
+  let panelVisible = true;
+
+  toggleBtn.addEventListener('click', () => {
+    panelVisible = !panelVisible;
+    controlPanel.classList.toggle('collapsed');
+    toggleBtn.querySelector('i').className = panelVisible ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+  });
+
+  // Recherche (simulation)
+  const searchInput = document.getElementById('searchInput');
+  const searchIcon = document.getElementById('searchIcon');
+  
+  searchInput.addEventListener('input', () => {
+    if (searchInput.value.length > 0) {
+      searchIcon.style.color = '#be185d';
+      searchIcon.style.transform = 'translateY(-50%) scale(1.1)';
+    } else {
+      searchIcon.style.color = '#ec4899';
+      searchIcon.style.transform = 'translateY(-50%) scale(1)';
+    }
+  });
+  
+  searchInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const searchTerm = searchInput.value.toLowerCase();
+      console.log('Recherche:', searchTerm);
+      // Ajouter ici la logique de recherche réelle
+    }
+  });
+
+  // Fonctions pour les modales
+  function openModal(modalId) {
+    document.getElementById(modalId).classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+    document.body.style.overflow = 'auto';
+  }
+
+  function closeAllModals() {
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.classList.remove('active');
+    });
+    document.body.style.overflow = 'auto';
+  }
+
+  // Fermer la modale en cliquant en dehors
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+      }
+    });
+  });
+
+  // Fonction de téléchargement
+  function downloadData() {
+    alert('Fonctionnalité de téléchargement : Cliquez sur OK pour télécharger les données au format GeoJSON');
+    // Ici vous pouvez ajouter la logique pour télécharger les données
+  }
+
+  // Animation des barres de graphiques lors de l'ouverture
+  const graphiquesModal = document.getElementById('graphiquesModal');
+  graphiquesModal.addEventListener('click', (e) => {
+    if (graphiquesModal.classList.contains('active')) {
+      setTimeout(() => {
+        document.querySelectorAll('.chart-bar-fill').forEach(bar => {
+          const width = bar.style.width;
+          bar.style.width = '0';
+          setTimeout(() => {
+            bar.style.width = width;
+          }, 100);
+        });
+      }, 300);
+    }
+  });
+
+</script>
+
+</body>
+</html>
