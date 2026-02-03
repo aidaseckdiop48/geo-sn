@@ -1,10 +1,10 @@
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
 <qgis version="3.24.0-Tisler">
-  <identifier></identifier>
+  <identifier>limites_parcelles_Merge2_Mer</identifier>
   <parentidentifier></parentidentifier>
-  <language></language>
+  <language>FRA</language>
   <type>dataset</type>
-  <title></title>
+  <title>limites_parcelles_Merge2_Mer</title>
   <abstract></abstract>
   <links/>
   <fees></fees>

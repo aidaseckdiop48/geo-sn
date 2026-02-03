@@ -1,1381 +1,553 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SIG Équipements Scolaires - NIORO</title>
-
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
-  <!-- Leaflet Draw -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-  
-  <!-- Leaflet MiniMap -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-minimap/3.6.1/Control.MiniMap.min.js"></script>
-
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Parcellaires – Pikine Nord</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    /* ─── RESET ─── */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; font-family:'Segoe UI',sans-serif; overflow:hidden; }
+
+    /* ─── HEADER ─── */
+    .header {
+      position:fixed; top:0; left:0; right:0; height:56px; z-index:1100;
+      background:linear-gradient(135deg, #c2185b, #e91e63);
+      color:#fff; display:flex; align-items:center; justify-content:space-between;
+      padding:0 20px; box-shadow:0 3px 14px rgba(0,0,0,.3);
+    }
+    .hdr-left { display:flex; align-items:center; gap:12px; }
+    .hdr-logo {
+      width:38px; height:38px; background:#fff; border-radius:9px;
+      display:flex; align-items:center; justify-content:center;
+      color:#c2185b; font-size:18px;
+    }
+    .hdr-title { font-size:18px; font-weight:700; line-height:1.2; }
+    .hdr-title small { display:block; font-size:11px; opacity:.78; font-weight:400; }
+    .hdr-nav { display:flex; gap:5px; }
+    .hdr-btn {
+      background:rgba(255,255,255,.17); border:none; color:#fff;
+      padding:6px 14px; border-radius:18px; cursor:pointer;
+      font-size:12.5px; display:flex; align-items:center; gap:5px; transition:.2s;
+    }
+    .hdr-btn:hover, .hdr-btn.active { background:rgba(255,255,255,.32); }
+
+    /* ─── LAYOUT ─── */
+    .layout { display:flex; height:100%; padding-top:56px; }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      width:310px; background:#f5f6f8; height:100%; overflow-y:auto;
+      box-shadow:3px 0 10px rgba(0,0,0,.1); flex-shrink:0;
+      display:flex; flex-direction:column;
+    }
+    .sb-head {
+      background:linear-gradient(135deg, #c2185b, #e91e63);
+      color:#fff; padding:12px 16px; font-size:14px; font-weight:600;
+      display:flex; align-items:center; gap:8px;
+      position:sticky; top:0; z-index:5;
+    }
+    .sb-body { padding:12px; display:flex; flex-direction:column; gap:12px; }
+
+    /* search */
+    .search-wrap { position:relative; }
+    .search-wrap input {
+      width:100%; padding:9px 34px 9px 13px; border:2px solid #e0e0e0;
+      border-radius:20px; font-size:13px; outline:none; background:#fff; transition:.2s;
+    }
+    .search-wrap input:focus { border-color:#e91e63; }
+    .search-wrap i { position:absolute; right:13px; top:50%; transform:translateY(-50%); color:#aaa; font-size:14px; }
+
+    /* stats */
+    .stats { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+    .stat {
+      padding:13px 4px; border-radius:12px; text-align:center; color:#fff;
+      box-shadow:0 3px 8px rgba(0,0,0,.13); transition:transform .2s;
+    }
+    .stat:hover { transform:translateY(-2px); }
+    .s1 { background:linear-gradient(135deg,#667eea,#764ba2); }
+    .s2 { background:linear-gradient(135deg,#f093fb,#f5576c); }
+    .s3 { background:linear-gradient(135deg,#4facfe,#00f2fe); }
+    .s4 { background:linear-gradient(135deg,#43e97b,#38f9d7); }
+    .stat-num { font-size:25px; font-weight:700; }
+    .stat-lbl { font-size:11px; opacity:.9; margin-top:2px; }
+
+    /* panels */
+    .panel { background:#fff; border-radius:10px; padding:11px 13px; border:1px solid #eee; }
+    .panel h4 { color:#c2185b; font-size:13px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+
+    /* legend rows */
+    .leg-row { display:flex; align-items:center; gap:8px; font-size:13px; color:#444; margin-bottom:5px; }
+    .leg-sw { width:20px; height:13px; border-radius:3px; flex-shrink:0; }
+    .sw-parcelle { background:#e91e63; }
+    .sw-batiment { background:#ff6b35; }
+    .sw-zone { background:rgba(100,140,255,.22); border:2px dashed #648cff; }
+
+    /* couche toggles */
+    .layer-row { display:flex; align-items:center; justify-content:space-between; font-size:13px; color:#444; margin-bottom:5px; }
+    .layer-row label { display:flex; align-items:center; gap:7px; }
+    .tog { position:relative; width:36px; height:21px; }
+    .tog input { opacity:0; width:0; height:0; }
+    .tog .sl {
+      position:absolute; inset:0; background:#ccc; border-radius:21px;
+      transition:.25s; cursor:pointer;
+    }
+    .tog .sl::before {
+      content:''; position:absolute; height:15px; width:15px;
+      left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.25s;
+    }
+    .tog input:checked + .sl { background:#e91e63; }
+    .tog input:checked + .sl::before { transform:translateX(15px); }
+
+    /* parcelle list */
+    .list-hd { font-size:11px; color:#999; text-transform:uppercase; letter-spacing:.5px; font-weight:600; }
+    .plist { display:flex; flex-direction:column; gap:5px; max-height:230px; overflow-y:auto; padding-right:3px; }
+    .plist::-webkit-scrollbar { width:4px; }
+    .plist::-webkit-scrollbar-thumb { background:#ddd; border-radius:2px; }
+    .p-card {
+      background:#fff; border:1px solid #eee; border-left:4px solid #e91e63;
+      border-radius:8px; padding:9px 11px; cursor:pointer; transition:.2s;
+    }
+    .p-card:hover { box-shadow:0 2px 8px rgba(0,0,0,.12); transform:translateX(3px); border-color:#e91e63; }
+    .p-card h5 { font-size:13px; color:#c2185b; margin-bottom:2px; }
+    .p-card p { font-size:11.5px; color:#666; margin:1.5px 0; }
+
+    /* ─── MAP ─── */
+    #map { flex:1; height:100%; }
+    .leaflet-control-zoom { display:none; }
+
+    /* custom controls */
+    .map-ctrl {
+      position:absolute; top:10px; right:10px; z-index:1000;
+      display:flex; flex-direction:column; gap:5px;
+    }
+    .mc {
+      width:33px; height:33px; background:#fff; border:none; border-radius:7px;
+      box-shadow:0 2px 6px rgba(0,0,0,.2); cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      font-size:14px; color:#444; transition:.2s;
+    }
+    .mc:hover { background:#f0f0f0; box-shadow:0 3px 9px rgba(0,0,0,.25); }
+
+    /* badge */
+    .zone-badge {
+      position:absolute; bottom:26px; left:50%; transform:translateX(-50%);
+      z-index:1000; background:rgba(194,24,91,.87); color:#fff;
+      padding:5px 15px; border-radius:17px; font-size:12.5px; font-weight:600;
+      box-shadow:0 2px 8px rgba(0,0,0,.25); pointer-events:none;
+      display:flex; align-items:center; gap:6px;
     }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f8fafc;
-      overflow: hidden;
-    }
+    /* ─── POPUP ─── */
+    .pop h4 { color:#c2185b; font-size:14px; margin-bottom:6px; padding-bottom:5px; border-bottom:1px solid #f0f0f0; }
+    .pop table { width:100%; border-collapse:collapse; font-size:12.5px; }
+    .pop table td { padding:3px 0; color:#555; vertical-align:top; }
+    .pop table td:first-child { font-weight:600; color:#333; width:85px; }
 
-    /* Navigation supérieure */
-    .top-nav {
-      height: 70px;
-      background: linear-gradient(135deg, #be185d 0%, #db2777 50%, #9f1239 100%);
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 30px;
-      box-shadow: 0 4px 20px rgba(190, 24, 93, 0.4);
-      position: relative;
-      z-index: 1000;
-    }
-
-    .nav-left {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-
-    .flag {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: linear-gradient(to right, #0e7c3a 33%, #fdef42 33%, #fdef42 66%, #c8102e 66%);
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      animation: pulse 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-
-    .nav-title h1 {
-      font-size: 22px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-
-    .nav-menu {
-      display: flex;
-      gap: 25px;
-      align-items: center;
-    }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 15px;
-      border-radius: 8px;
-      transition: all 0.3s;
-      font-size: 14px;
-      opacity: 0.9;
-      cursor: pointer;
-    }
-
-    .nav-item:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: translateY(-2px);
-    }
-
-    .nav-item.active {
-      background: rgba(255, 255, 255, 0.25);
-      font-weight: 600;
-      opacity: 1;
-    }
-
-    .nav-icons {
-      display: flex;
-      gap: 15px;
-    }
-
-    .nav-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.15);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.3s;
-      position: relative;
-    }
-
-    .nav-icon:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: scale(1.1) rotate(5deg);
-    }
-
-    /* Container principal */
-    .container {
-      display: flex;
-      height: calc(100vh - 70px);
-    }
-
-    /* Panneau de contrôle */
-    .control-panel {
-      width: 380px;
-      background: linear-gradient(180deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%);
-      border-right: 1px solid #fbcfe8;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 4px 0 20px rgba(190, 24, 93, 0.15);
-      position: relative;
-      z-index: 500;
-    }
-
-    .panel-header {
-      background: linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%);
-      color: white;
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 18px;
-      font-weight: 600;
-      box-shadow: 0 4px 15px rgba(219, 39, 119, 0.4);
-    }
-
-    .panel-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-    }
-
-    /* Recherche */
-    .search-box {
-      position: relative;
-      margin-bottom: 20px;
-    }
-
-    .search-box input {
-      width: 100%;
-      padding: 14px 45px 14px 20px;
-      border: 2px solid #fbcfe8;
-      border-radius: 12px;
-      font-size: 14px;
-      outline: none;
-      transition: all 0.3s;
-      background: white;
-    }
-
-    .search-box input:focus {
-      border-color: #ec4899;
-      box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.15);
-      transform: translateY(-2px);
-    }
-
-    .search-box i {
-      position: absolute;
-      right: 18px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #ec4899;
-      font-size: 16px;
-      transition: all 0.3s;
-    }
-
-    /* Cartes statistiques */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .stat-card {
-      padding: 20px;
-      border-radius: 16px;
-      color: white;
-      text-align: center;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-      transition: all 0.3s;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-
-    .stat-card:hover::before {
-      opacity: 1;
-      animation: shine 1.5s ease-in-out;
-    }
-
-    @keyframes shine {
-      0% { transform: translate(-50%, -50%) rotate(0deg); }
-      100% { transform: translate(50%, 50%) rotate(360deg); }
-    }
-
-    .stat-card:hover {
-      transform: translateY(-5px) scale(1.02);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-    }
-
-    .stat-card h2 {
-      font-size: 36px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-      animation: fadeIn 0.5s ease-in;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .stat-card p {
-      font-size: 14px;
-      font-weight: 500;
-      opacity: 0.95;
-    }
-
-    .stat-purple { 
-      background: linear-gradient(135deg, #8b5cf6, #6366f1);
-      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
-    }
-    .stat-pink { 
-      background: linear-gradient(135deg, #ec4899, #db2777);
-      box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
-    }
-    .stat-cyan { 
-      background: linear-gradient(135deg, #06b6d4, #0891b2);
-      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
-    }
-    .stat-green { 
-      background: linear-gradient(135deg, #10b981, #16a34a);
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-    }
-
-    /* Section gestion des couches */
-    .layers-section h3 {
-      color: #be185d;
-      font-size: 16px;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .layer-item {
-      background: white;
-      padding: 15px;
-      border-radius: 12px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: all 0.3s;
-      border: 2px solid transparent;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    }
-
-    .layer-item:hover {
-      border-color: #ec4899;
-      box-shadow: 0 4px 15px rgba(236, 72, 153, 0.2);
-      transform: translateX(5px);
-    }
-
-    .layer-checkbox {
-      width: 22px;
-      height: 22px;
-      cursor: pointer;
-      accent-color: #ec4899;
-    }
-
-    .layer-color {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      animation: glow 2s ease-in-out infinite;
-    }
-
-    @keyframes glow {
-      0%, 100% { box-shadow: 0 0 5px currentColor; }
-      50% { box-shadow: 0 0 15px currentColor; }
-    }
-
-    .layer-info {
-      flex: 1;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .layer-name {
-      font-weight: 600;
-      color: #1f2937;
-      font-size: 14px;
-    }
-
-    .layer-count {
-      background: linear-gradient(135deg, #ec4899, #db2777);
-      color: white;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    /* Carte */
-    #map {
-      flex: 1;
-      position: relative;
-    }
-
-    /* Panneau légende - POSITION MODIFIÉE */
-    .legend-panel {
-      position: absolute;
-      right: 20px;
-      bottom: 30px;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-      min-width: 220px;
-      z-index: 400;
-      border-top: 4px solid #ec4899;
-      transition: all 0.3s;
-    }
-
-    .legend-panel:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 12px 40px rgba(236, 72, 153, 0.3);
-    }
-
-    .legend-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #be185d;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-bottom: 2px solid #fce7f3;
-      padding-bottom: 10px;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-      font-size: 13px;
-      color: #374151;
-      padding: 5px;
-      border-radius: 6px;
-      transition: all 0.2s;
-    }
-
-    .legend-item:hover {
-      background: #fce7f3;
-      padding-left: 10px;
-      transform: translateX(5px);
-    }
-
-    .legend-symbol {
-      font-size: 18px;
-    }
-
-    /* Scrollbar personnalisée */
-    .panel-content::-webkit-scrollbar {
-      width: 10px;
-    }
-
-    .panel-content::-webkit-scrollbar-track {
-      background: linear-gradient(180deg, #fce7f3, #fbcfe8);
-      border-radius: 10px;
-    }
-
-    .panel-content::-webkit-scrollbar-thumb {
-      background: linear-gradient(180deg, #ec4899, #db2777);
-      border-radius: 10px;
-      border: 2px solid #fce7f3;
-    }
-
-    .panel-content::-webkit-scrollbar-thumb:hover {
-      background: linear-gradient(180deg, #db2777, #be185d);
-    }
-
-    /* Bouton toggle panneau */
-    .toggle-panel {
-      position: absolute;
-      left: 380px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 30px;
-      height: 60px;
-      background: linear-gradient(135deg, #ec4899 0%, #db2777 50%, #be185d 100%);
-      border-radius: 0 10px 10px 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 501;
-      color: white;
-      box-shadow: 2px 0 15px rgba(236, 72, 153, 0.5);
-      transition: all 0.3s;
-    }
-
-    .toggle-panel:hover {
-      width: 38px;
-      box-shadow: 2px 0 20px rgba(236, 72, 153, 0.7);
-    }
-
-    .control-panel.collapsed {
-      margin-left: -380px;
-    }
-
-    .control-panel.collapsed + .toggle-panel {
-      left: 0;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .nav-menu {
-        display: none;
-      }
-      
-      .control-panel {
-        width: 100%;
-        position: absolute;
-        z-index: 1001;
-      }
-
-      .legend-panel {
-        right: 10px;
-        bottom: 20px;
-        min-width: 180px;
-        padding: 15px;
-      }
-    }
-
-    /* Modales */
+    /* ─── MODAL ─── */
+    .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:2000; justify-content:center; align-items:center; }
+    .overlay.show { display:flex; }
     .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      z-index: 2000;
-      backdrop-filter: blur(5px);
-    }
-
-    .modal.active {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .modal-content {
-      background: white;
-      border-radius: 20px;
-      width: 90%;
-      max-width: 1200px;
-      max-height: 85vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      animation: slideUp 0.3s ease;
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(50px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .modal-header {
-      background: linear-gradient(135deg, #ec4899, #db2777, #be185d);
-      color: white;
-      padding: 25px 30px;
-      border-radius: 20px 20px 0 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-header h2 {
-      font-size: 24px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .modal-close {
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      color: white;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.3s;
-    }
-
-    .modal-close:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: rotate(90deg);
-    }
-
-    .modal-body {
-      padding: 30px;
-    }
-
-    .about-section {
-      margin-bottom: 25px;
-    }
-
-    .about-section h3 {
-      color: #be185d;
-      margin-bottom: 12px;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .about-section p {
-      color: #4b5563;
-      line-height: 1.8;
-      margin-bottom: 10px;
-    }
-
-    .profile-card {
-      background: linear-gradient(135deg, #fce7f3, #fbcfe8);
-      padding: 25px;
-      border-radius: 16px;
-      margin-bottom: 25px;
-      border-left: 5px solid #ec4899;
-    }
-
-    .profile-card h3 {
-      color: #be185d;
-      font-size: 22px;
-      margin-bottom: 8px;
-    }
-
-    .profile-card p {
-      color: #831843;
-      font-size: 16px;
-      font-weight: 500;
-    }
-
-    /* Catalogue */
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    .data-table th {
-      background: linear-gradient(135deg, #ec4899, #db2777);
-      color: white;
-      padding: 15px;
-      text-align: left;
-      font-weight: 600;
-    }
-
-    .data-table td {
-      padding: 15px;
-      border-bottom: 1px solid #fce7f3;
-      color: #374151;
-    }
-
-    .data-table tr:hover {
-      background: #fef2f8;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 5px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .badge-pink {
-      background: #fce7f3;
-      color: #be185d;
-    }
-
-    .badge-green {
-      background: #d1fae5;
-      color: #16a34a;
-    }
-
-    .badge-blue {
-      background: #dbeafe;
-      color: #2563eb;
-    }
-
-    /* Graphiques AMÉLIORÉS */
-    .charts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 25px;
-      margin-top: 20px;
-    }
-
-    .chart-card {
-      background: white;
-      border-radius: 16px;
-      padding: 25px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      border-top: 4px solid #ec4899;
-      transition: all 0.3s;
-    }
-
-    .chart-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 25px rgba(236, 72, 153, 0.2);
-    }
-
-    .chart-card h4 {
-      color: #be185d;
-      margin-bottom: 20px;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .chart-bar {
-      background: #fce7f3;
-      height: 30px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .chart-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #ec4899, #db2777);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding-right: 10px;
-      color: white;
-      font-weight: 600;
-      font-size: 13px;
-      transition: width 1s ease;
-    }
-
-    .chart-bar-label {
-      position: absolute;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #831843;
-      font-weight: 600;
-      font-size: 13px;
-    }
-
-    .stat-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 12px;
-      background: #fef2f8;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      transition: all 0.2s;
-    }
-
-    .stat-item:hover {
-      background: #fce7f3;
-      transform: translateX(5px);
-    }
-
-    .stat-item-label {
-      color: #831843;
-      font-weight: 600;
-    }
-
-    .stat-item-value {
-      color: #be185d;
-      font-weight: 700;
-      font-size: 18px;
-    }
-
-    /* NOUVEAUX STYLES POUR GRAPHIQUES CIRCULAIRES */
-    .circular-chart {
-      position: relative;
-      width: 200px;
-      height: 200px;
-      margin: 20px auto;
-    }
-
-    .donut-chart {
-      width: 100%;
-      height: 100%;
-      transform: rotate(-90deg);
-    }
-
-    .donut-segment {
-      fill: none;
-      stroke-width: 30;
-      transition: all 0.3s;
-      cursor: pointer;
-    }
-
-    .donut-segment:hover {
-      stroke-width: 35;
-      filter: brightness(1.1);
-    }
-
-    .chart-center-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-    }
-
-    .chart-center-number {
-      font-size: 36px;
-      font-weight: 700;
-      color: #be185d;
-    }
-
-    .chart-center-label {
-      font-size: 12px;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    /* GRAPHIQUES DE PROGRESSION */
-    .progress-item {
-      margin-bottom: 20px;
-    }
-
-    .progress-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-
-    .progress-label {
-      font-weight: 600;
-      color: #374151;
-      font-size: 14px;
-    }
-
-    .progress-value {
-      font-weight: 700;
-      color: #be185d;
-      font-size: 14px;
-    }
-
-    .progress-bar {
-      height: 12px;
-      background: #f3f4f6;
-      border-radius: 20px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .progress-fill {
-      height: 100%;
-      border-radius: 20px;
-      transition: width 1.5s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .progress-fill::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-      animation: shimmer 2s infinite;
-    }
-
-    @keyframes shimmer {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
-    }
-
-    /* LÉGENDE DES GRAPHIQUES */
-    .chart-legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-top: 20px;
-      justify-content: center;
-    }
-
-    .legend-item-chart {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-    }
-
-    .legend-color-box {
-      width: 16px;
-      height: 16px;
-      border-radius: 4px;
-    }
-
-    /* CARTES DE COMPARAISON */
-    .comparison-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-top: 15px;
-    }
-
-    .comparison-card {
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-      color: white;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .comparison-card::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
-      animation: float 6s ease-in-out infinite;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translate(0, 0); }
-      50% { transform: translate(-20px, -20px); }
-    }
-
-    .comparison-number {
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 5px;
-    }
-
-    .comparison-label {
-      font-size: 12px;
-      opacity: 0.9;
-    }
-
-    /* INDICATEURS DE PERFORMANCE */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-      margin-top: 15px;
-    }
-
-    .kpi-card {
-      background: linear-gradient(135deg, #fef2f8, #fce7f3);
-      padding: 20px;
-      border-radius: 12px;
-      border-left: 4px solid #ec4899;
-      transition: all 0.3s;
-    }
-
-    .kpi-card:hover {
-      transform: translateX(5px);
-      box-shadow: 0 4px 15px rgba(236, 72, 153, 0.2);
-    }
-
-    .kpi-value {
-      font-size: 28px;
-      font-weight: 700;
-      color: #be185d;
-      margin-bottom: 5px;
-    }
-
-    .kpi-label {
-      font-size: 13px;
-      color: #831843;
-      font-weight: 600;
-    }
-
-    .kpi-trend {
-      display: inline-block;
-      margin-top: 5px;
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .kpi-trend.up {
-      background: #d1fae5;
-      color: #16a34a;
-    }
-
-    .kpi-trend.down {
-      background: #fee2e2;
-      color: #dc2626;
+      background:#fff; border-radius:13px; padding:24px; width:92%; max-width:440px;
+      max-height:86vh; overflow-y:auto; box-shadow:0 14px 40px rgba(0,0,0,.3);
+    }
+    .modal-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .modal-hd h2 { color:#c2185b; font-size:18px; }
+    .modal-hd .xbtn { background:none; border:none; font-size:23px; cursor:pointer; color:#aaa; }
+    .modal-hd .xbtn:hover { color:#333; }
+    .fg { margin-bottom:12px; }
+    .fg label { display:block; font-size:12.5px; font-weight:600; color:#444; margin-bottom:4px; }
+    .fg input, .fg textarea {
+      width:100%; padding:9px 10px; border:2px solid #e0e0e0; border-radius:7px;
+      font-size:13px; outline:none; transition:.2s;
+    }
+    .fg input:focus, .fg textarea:focus { border-color:#e91e63; }
+    .fg-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .btn-save {
+      width:100%; padding:10px; background:linear-gradient(135deg,#c2185b,#e91e63);
+      color:#fff; border:none; border-radius:20px; font-size:14px; font-weight:600;
+      cursor:pointer; transition:transform .2s;
+    }
+    .btn-save:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(194,24,91,.4); }
+
+    /* about table */
+    .about-tbl { width:100%; border-collapse:collapse; font-size:13.5px; margin-top:10px; }
+    .about-tbl td { padding:5px 0; color:#555; }
+    .about-tbl td:first-child { font-weight:600; color:#333; width:130px; }
+    .about-tbl .sep { color:#c2185b; font-weight:600; padding-top:12px !important; border-top:1px solid #eee; }
+
+    /* FAB */
+    .fab {
+      position:fixed; bottom:20px; right:20px; width:48px; height:48px;
+      background:linear-gradient(135deg,#c2185b,#e91e63); border:none; border-radius:50%;
+      color:#fff; font-size:20px; cursor:pointer; z-index:1500;
+      box-shadow:0 4px 14px rgba(194,24,91,.5); transition:transform .2s;
+      display:flex; align-items:center; justify-content:center;
+    }
+    .fab:hover { transform:scale(1.1); }
+
+    @media(max-width:680px){
+      .layout { flex-direction:column; }
+      .sidebar { width:100%; max-height:250px; }
+      .hdr-nav { display:none; }
     }
   </style>
 </head>
 <body>
 
-<!-- Navigation supérieure -->
-<div class="top-nav">
-  <div class="nav-left">
-    <div class="flag">⭐</div>
-    <div class="nav-title">
-      <h1>SIG Équipements Scolaires - NIORO</h1>
+<!-- ══ HEADER ══ -->
+<div class="header">
+  <div class="hdr-left">
+    <div class="hdr-logo"><i class="fas fa-map-marked-alt"></i></div>
+    <div class="hdr-title">Gestion des Parcellaires dans la commune de Pikine Nord
+      <small>Commune de Pikine Nord · Département de Pikine · Région de Dakar</small>
     </div>
   </div>
-  
-  <div class="nav-menu">
-    <div class="nav-item active" onclick="closeAllModals()"><i class="fas fa-home"></i> Accueil</div>
-    <div class="nav-item" onclick="openModal('aboutModal')"><i class="fas fa-info-circle"></i> À propos</div>
-    <div class="nav-item" onclick="openModal('catalogueModal')"><i class="fas fa-th"></i> Catalogue</div>
-    <div class="nav-item" onclick="openModal('graphiquesModal')"><i class="fas fa-chart-bar"></i> Graphiques</div>
-    <div class="nav-item" onclick="downloadData()"><i class="fas fa-download"></i> Télécharger</div>
-  </div>
-
-  <div class="nav-icons">
-    <div class="nav-icon"><i class="fas fa-bell"></i></div>
-    <div class="nav-icon"><i class="fas fa-user"></i></div>
-    <div class="nav-icon"><i class="fas fa-globe"></i></div>
-    <div class="nav-icon"><i class="fas fa-map-marker-alt"></i></div>
+  <div class="hdr-nav">
+    <button class="hdr-btn active"><i class="fas fa-home"></i> Accueil</button>
+    <button class="hdr-btn" onclick="document.getElementById('aboutOverlay').classList.add('show')"><i class="fas fa-info-circle"></i> À propos</button>
+    <button class="hdr-btn" onclick="document.getElementById('catalogOverlay').classList.add('show')"><i class="fas fa-th"></i> Catalogue</button>
+    <button class="hdr-btn" onclick="exportGeoJSON()"><i class="fas fa-download"></i> Télécharger</button>
   </div>
 </div>
 
-<!-- Container principal -->
-<div class="container">
-  
-  <!-- Panneau de contrôle -->
-  <div class="control-panel" id="controlPanel">
-    <div class="panel-header">
-      <i class="fas fa-layer-group"></i>
-      Panneau de Contrôle
-    </div>
-    
-    <div class="panel-content">
-      <!-- Recherche -->
-      <div class="search-box">
-        <input type="text" placeholder="Rechercher un lieu..." id="searchInput">
-        <i class="fas fa-search" id="searchIcon"></i>
+<!-- ══ LAYOUT ══ -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-head"><i class="fas fa-layer-group"></i> Panneau de Contrôle</div>
+    <div class="sb-body">
+
+      <!-- recherche -->
+      <div class="search-wrap">
+        <input type="text" id="searchInput" placeholder="Rechercher un lieu…" oninput="filterList()">
+        <i class="fas fa-search"></i>
       </div>
 
-      <!-- Statistiques -->
-      <div class="stats-grid">
-        <div class="stat-card stat-purple">
-          <h2>1250</h2>
-          <p>Total</p>
+      <!-- statistiques -->
+      <div class="stats">
+        <div class="stat s1"><div class="stat-num">3 654</div><div class="stat-lbl">Total</div></div>
+        <div class="stat s2"><div class="stat-num">3 544</div><div class="stat-lbl">Lots</div></div>
+        <div class="stat s3"><div class="stat-num" id="stParcelles">—</div><div class="stat-lbl">Parcelles</div></div>
+        <div class="stat s4"><div class="stat-num">004</div><div class="stat-lbl">Section</div></div>
+      </div>
+
+      <!-- légende -->
+      <div class="panel">
+        <h4><i class="fas fa-palette"></i> Légende</h4>
+        <div class="leg-row"><div class="leg-sw sw-parcelle"></div> Parcelles</div>
+        <div class="leg-row"><div class="leg-sw sw-batiment"></div> Bâtiments</div>
+        <div class="leg-row"><div class="leg-sw sw-zone"></div> Zone d'étude (Commune)</div>
+      </div>
+
+      <!-- gestion couches -->
+      <div class="panel">
+        <h4><i class="fas fa-layer-group"></i> Gestion des couches</h4>
+        <div class="layer-row">
+          <label><div class="leg-sw sw-parcelle"></div> Parcellaire</label>
+          <label class="tog"><input type="checkbox" checked onchange="toggleCouche('parcellaire',this.checked)"><span class="sl"></span></label>
         </div>
-        <div class="stat-card stat-pink">
-          <h2>20</h2>
-          <p>Écoles</p>
+        <div class="layer-row">
+          <label><div class="leg-sw sw-batiment"></div> Bâtiments</label>
+          <label class="tog"><input type="checkbox" checked onchange="toggleCouche('batiment',this.checked)"><span class="sl"></span></label>
         </div>
-        <div class="stat-card stat-cyan">
-          <h2>727</h2>
-          <p>Routes</p>
-        </div>
-        <div class="stat-card stat-green">
-          <h2>499</h2>
-          <p>Localités</p>
+        <div class="layer-row">
+          <label><div class="leg-sw sw-zone"></div> Zone d'étude</label>
+          <label class="tog"><input type="checkbox" checked onchange="toggleCouche('zone',this.checked)"><span class="sl"></span></label>
         </div>
       </div>
 
-      <!-- Gestion des couches -->
-      <div class="layers-section">
-        <h3>
-          <i class="fas fa-layer-group"></i>
-          Gestion des couches
-        </h3>
-        <div id="layersList"></div>
-      </div>
+      <!-- liste parcelles -->
+      <div class="list-hd"><i class="fas fa-list"></i> Liste des parcelles</div>
+      <div class="plist" id="plist"><p style="color:#aaa;font-size:13px;">Chargement…</p></div>
+
     </div>
   </div>
 
-  <!-- Bouton toggle -->
-  <div class="toggle-panel" id="toggleBtn">
-    <i class="fas fa-chevron-left"></i>
-  </div>
-
-  <!-- Carte -->
-  <div id="map"></div>
-  
-  <!-- Légende - POSITION DESCENDUE -->
-  <div class="legend-panel">
-    <div class="legend-title">
-      <i class="fas fa-list"></i>
-      Légende
+  <!-- MAP -->
+  <div id="map" style="position:relative;">
+    <div class="map-ctrl">
+      <button class="mc" onclick="map.zoomIn()" title="Zoom +"><i class="fas fa-plus"></i></button>
+      <button class="mc" onclick="map.zoomOut()" title="Zoom −"><i class="fas fa-minus"></i></button>
+      <button class="mc" onclick="resetView()" title="Vue initiale"><i class="fas fa-crosshairs"></i></button>
+      <button class="mc" onclick="toggleSat()" title="Satellite"><i class="fas fa-satellite"></i></button>
     </div>
-    <div class="legend-item">
-      <span class="legend-symbol" style="color:#ec4899">●</span>
-      <span>Localités</span>
-    </div>
-    <div class="legend-item">
-      <span class="legend-symbol" style="color:#16a34a">●</span>
-      <span>Écoles</span>
-    </div>
-    <div class="legend-item">
-      <span class="legend-symbol" style="color:#f97316">—</span>
-      <span>Routes</span>
-    </div>
-    <div class="legend-item">
-      <span class="legend-symbol" style="color:#7c3aed">▬</span>
-      <span>Arrondissements</span>
-    </div>
-    <div class="legend-item">
-      <span class="legend-symbol" style="color:#dc2626">▬</span>
-      <span>Département</span>
-    </div>
+    <div class="zone-badge"><i class="fas fa-map"></i> Zone d'étude – Commune de Pikine Nord</div>
   </div>
 </div>
 
-<!-- Modal À propos -->
-<div class="modal" id="aboutModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2><i class="fas fa-info-circle"></i> À propos</h2>
-      <button class="modal-close" onclick="closeModal('aboutModal')">×</button>
+<!-- FAB -->
+<button class="fab" onclick="openAdd()" title="Ajouter une parcelle"><i class="fas fa-plus"></i></button>
+
+<!-- ══ MODAL AJOUT ══ -->
+<div class="overlay" id="addOverlay">
+  <div class="modal">
+    <div class="modal-hd"><h2>Ajouter une parcelle</h2><button class="xbtn" onclick="document.getElementById('addOverlay').classList.remove('show')">&times;</button></div>
+    <div class="fg"><label>NICAD *</label><input type="text" id="fNicad" placeholder="Ex : 14 1 004 01 04432"></div>
+    <div class="fg-row">
+      <div class="fg"><label>N° Lot *</label><input type="text" id="fLot" placeholder="Ex : 4432"></div>
+      <div class="fg"><label>Section</label><input type="text" value="004" readonly></div>
     </div>
-    <div class="modal-body">
-      <div class="profile-card">
-        <h3>👩‍🎓 AIDA SECK DIOP</h3>
-        <p>Étudiante en Licence 3 Géomatique</p>
-      </div>
-
-      <div class="about-section">
-        <h3><i class="fas fa-map-marked-alt"></i> Projet SIG Scolaire - NIORO</h3>
-        <p>
-          Ce Système d'Information Géographique (SIG) a été développé dans le cadre d'un projet académique 
-          visant à cartographier et analyser les infrastructures scolaires du département de NIORO.
-        </p>
-        <p>
-          L'objectif principal est de fournir un outil interactif permettant de visualiser la répartition 
-          géographique des écoles, des routes, des localités et des arrondissements.
-        </p>
-      </div>
-
-      <div class="about-section">
-        <h3><i class="fas fa-bullseye"></i> Objectifs du projet</h3>
-        <p>• Cartographie des équipements scolaires</p>
-        <p>• Analyse spatiale des infrastructures éducatives</p>
-        <p>• Aide à la planification et à la prise de décision</p>
-        <p>• Accessibilité et visualisation des données géographiques</p>
-      </div>
-
-      <div class="about-section">
-        <h3><i class="fas fa-tools"></i> Technologies utilisées</h3>
-        <p>• Leaflet.js pour la cartographie interactive</p>
-        <p>• GeoJSON pour les données géospatiales</p>
-        <p>• HTML5, CSS3 et JavaScript</p>
-        <p>• OpenStreetMap comme fond de carte</p>
-      </div>
-
-      <div class="about-section">
-        <h3><i class="fas fa-graduation-cap"></i> Formation</h3>
-        <p>
-          <strong>Licence 3 Géomatique</strong><br>
-          Spécialisation en systèmes d'information géographique, cartographie numérique et analyse spatiale.
-        </p>
-      </div>
+    <div class="fg"><label>Commune</label><input type="text" value="Pikine Nord" readonly></div>
+    <div class="fg"><label>Propriétaire</label><input type="text" id="fProp" placeholder="Nom…"></div>
+    <div class="fg-row">
+      <div class="fg"><label>Latitude</label><input type="number" id="fLat" step="0.000001" placeholder="14.7646"></div>
+      <div class="fg"><label>Longitude</label><input type="number" id="fLng" step="0.000001" placeholder="-17.3674"></div>
     </div>
+    <div class="fg"><label>Observations</label><textarea id="fObs" rows="2" placeholder="Remarques…"></textarea></div>
+    <button class="btn-save" onclick="saveAdd()"><i class="fas fa-save"></i> Enregistrer</button>
   </div>
 </div>
 
-<!-- Modal Catalogue -->
-<div class="modal" id="catalogueModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2><i class="fas fa-th"></i> Catalogue de données</h2>
-      <button class="modal-close" onclick="closeModal('catalogueModal')">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="about-section">
-        <h3><i class="fas fa-database"></i> Données disponibles</h3>
-        <p>Ensemble des couches géographiques du département de NIORO</p>
-      </div>
-
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Couche</th>
-            <th>Type</th>
-            <th>Nombre</th>
-            <th>Format</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong>Département</strong></td>
-            <td><span class="badge badge-pink">Polygone</span></td>
-            <td>1</td>
-            <td>GeoJSON</td>
-          </tr>
-          <tr>
-            <td><strong>Arrondissements</strong></td>
-            <td><span class="badge badge-pink">Polygone</span></td>
-            <td>4</td>
-            <td>GeoJSON</td>
-          </tr>
-          <tr>
-            <td><strong>Routes</strong></td>
-            <td><span class="badge badge-blue">Ligne</span></td>
-            <td>727</td>
-            <td>GeoJSON</td>
-          </tr>
-          <tr>
-            <td><strong>Localités</strong></td>
-            <td><span class="badge badge-green">Point</span></td>
-            <td>499</td>
-            <td>GeoJSON</td>
-          </tr>
-          <tr>
-            <td><strong>Écoles</strong></td>
-            <td><span class="badge badge-green">Point</span></td>
-            <td>20</td>
-            <td>GeoJSON</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="about-section" style="margin-top: 30px;">
-        <h3><i class="fas fa-info-circle"></i> Informations techniques</h3>
-        <div class="stat-item">
-          <span class="stat-item-label">Système de coordonnées</span>
-          <span class="stat-item-value">WGS84</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-item-label">Projection</span>
-          <span class="stat-item-value">EPSG:4326</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-item-label">Total des entités</span>
-          <span class="stat-item-value">1251</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-item-label">Dernière mise à jour</span>
-          <span class="stat-item-value">2025</span>
-        </div>
-      </div>
-    </div>
+<!-- ══ MODAL À PROPOS ══ -->
+<div class="overlay" id="aboutOverlay">
+  <div class="modal">
+    <div class="modal-hd"><h2>À propos</h2><button class="xbtn" onclick="document.getElementById('aboutOverlay').classList.remove('show')">&times;</button></div>
+    <p style="font-size:13.5px;color:#555;line-height:1.7;">Cette plateforme a été développée pour la <strong>gestion foncière de la commune de Pikine Nord</strong>, située dans le département de Pikine, région de Dakar, Sénégal.</p>
+    <table class="about-tbl">
+      <tr><td>Commune</td><td>Pikine Nord</td></tr>
+      <tr><td>Département</td><td>Pikine</td></tr>
+      <tr><td>Région</td><td>Dakar</td></tr>
+      <tr><td>Superficie</td><td>≈ 1,006 km²</td></tr>
+      <tr><td>Section</td><td>004</td></tr>
+      <tr><td>Total Parcelles</td><td id="aboutParcelles">—</td></tr>
+      <tr><td>Total Lots</td><td id="aboutLots">—</td></tr>
+    </table>
   </div>
 </div>
 
-<!-- Modal Graphiques AMÉLIORÉE -->
-<div class="modal" id="graphiquesModal">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2><i class="fas fa-chart-bar"></i> Graphiques et statistiques</h2>
-      <button class="modal-close" onclick="closeModal('graphiquesModal')">×</button>
-    </div>
-    <div class="modal-body">
-      
-      <!-- Section 1: Graphiques en barres et circulaires -->
-      <div class="charts-grid">
-        
-        <!-- Graphique à barres -->
-        <div class="chart-card">
-          <h4><i class="fas fa-chart-bar"></i> Répartition par type</h4>
-          <div class="chart-bar">
-            <span class="chart-bar-label">Localités</span>
-            <div class="chart-bar-fill" style="width: 40%">499</div>
-          </div>
-          <div class="chart-bar">
-            <span class="chart-bar-label">Routes</span>
-            <div class="chart-bar-fill" style="width: 58%">727</div>
-          </div>
-          <div class="chart-bar">
-            <span class="chart-bar-label">Écoles</span>
-            <div class="chart-bar-fill" style="width: 1.6%">20</div>
-          </div>
-          <div class="chart-bar">
-            <span class="chart-bar-label">Arrondissements</span>
-            <div class="chart-bar-fill" style="width: 0.32%">4</div>
-          </div>
-        </div>
+<!-- ══ MODAL CATALOGUE ══ -->
+<div class="overlay" id="catalogOverlay">
+  <div class="modal">
+    <div class="modal-hd"><h2>Catalogue des données</h2><button class="xbtn" onclick="document.getElementById('catalogOverlay').classList.remove('show')">&times;</button></div>
+    <table class="about-tbl">
+      <tr><td class="sep" colspan="2">Couches disponibles</td></tr>
+      <tr><td>Parcellaire</td><td>parcellaire_pikine_nord.geojson</td></tr>
+      <tr><td>Bâtiments</td><td>Batiment_pikine_Nord.geojson</td></tr>
+      <tr><td>Zone d'étude</td><td>pikine_nord.geojson</td></tr>
+      <tr><td class="sep" colspan="2">Informations</td></tr>
+      <tr><td>Format</td><td>GeoJSON</td></tr>
+      <tr><td>Source</td><td>Service du Cadastre – Pikine Nord</td></tr>
+      <tr><td>Mise à jour</td><td>Février 2026</td></tr>
+    </table>
+  </div>
+</div>
 
-        <!-- Graphique circulaire -->
-        <div class="chart-card">
-          <h4><i class="fas fa-chart-pie"></i> Distribution des données</h4>
-          <div class="circular-chart">
-            <svg class="donut-chart" viewBox="0 0 120 120">
-              <circle class="donut-segment" cx="60" cy="60" r="45" 
-                      stroke="#ec4899" stroke-dasharray="89.5 282" stroke-dashoffset="0"></circle>
-              <circle class="donut-segment" cx="60" cy="60" r="45" 
-                      stroke="#f97316" stroke-dasharray="164 282" stroke-dashoffset="-89.5"></circle>
-              <circle class="donut-segment" cx="60" cy="60" r="45" 
-                      stroke="#16a34a" stroke-dasharray="4.5 282" stroke-dashoffset="-253.5"></circle>
-              <circle class="donut-segment" cx="60" cy="60" r="45" 
-                      stroke="#7c3aed" stroke-dasharray="0.9 282" stroke-dashoffset="-258"></circle>
-            </svg>
-            <div class="chart-center-text">
-              <div class="chart-center-number">1250</div>
-              <div class="chart-center-label">Total</div>
-            </div>
-          </div>
-          <div class="chart-legend">
-            <div class="legend-item-chart">
-              <div class="legend-color-box" style="background:#ec4899"></div>
-              <span>Localités (40%)</span>
-            </div>
-            <div class="legend-item-chart">
-              <div class="legend-color-box" style="background:#f97316"></div>
-              <span>Routes (58%)</span>
-            </div>
-            <div class="legend-item-chart">
-              <div class="legend-color-box" style="background:#16a34a"></div>
-              <span>Écoles (1.6%)</span>
-            </div>
-            <div class="legend-item-chart">
-              <div class="legend-color-box" style="background:#7c3aed"></div>
-              <span>Arrond. (0.32%)</span>
-            </div>
-          </div>
-        </div>
+<!-- ══ SCRIPTS ══ -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ═══ CARTE ═══ */
+const OSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap contributors', maxZoom:19 });
+const SAT = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{ attribution:'© Esri', maxZoom:18 });
+const map = L.map('map',{ zoomControl:false }).setView([14.75,-17.40],13);
+OSM.addTo(map);
+let satOn = false;
+function toggleSat(){ satOn?(map.removeLayer(SAT),OSM.addTo(map)):(map.removeLayer(OSM),SAT.addTo(map)); satOn=!satOn; }
 
-        <!-- Graphique de progression -->
-        <div class="chart-card">
-          <h4><i class="fas fa-tasks"></i> Taux de couverture</h4>
-          <div class="progress-item">
-            <div class="progress-header">
-              <span class="progress-label">Écoles</span>
-              <span class="progress-value">1.6%</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: 1.6%; background: linear-gradient(90deg, #16a34a, #22c55e)"></div>
-            </div>
-          </div>
-          <div class="progress-item">
-            <div class="progress-header">
-              <span class="progress-label">Routes</span>
-              <span class="progress-value">58.2%</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: 58.2%; background: linear-gradient(90deg, #f97316, #fb923c)"></div>
-            </div>
-          </div>
-          <div class="progress-item">
-            <div class="progress-header">
-              <span class="progress-label">Localités</span>
-              <span class="progress-value">39.9%</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: 39.9%; background: linear-gradient(90deg, #ec4899, #f472b6)"></div>
-            </div>
-          </div>
-          <div class="progress-item">
-            <div class="progress-header">
-              <span class="progress-label">Arrondissements</span>
-              <span class="progress-value">0.3%</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" style="width: 0.3%; background: linear-gradient(90deg, #7c3aed, #a78bfa)"></div>
-            </div>
-          </div>
-        </div>
+/* ═══ COUCHES (référence) ═══ */
+let lZone = null, lParcellaire = null, lBatiment = null;
+let zoneBounds = null;
+function resetView(){ zoneBounds && map.fitBounds(zoneBounds); }
 
-        <!-- KPIs -->
-        <div class="chart-card">
-          <h4><i class="fas fa-chart-line"></i> Indicateurs clés</h4>
-          <div class="kpi-grid">
-            <div class="kpi-card">
-              <div class="kpi-value">1:25</div>
-              <div class="kpi-label">École / Localité</div>
-              <span class="kpi-trend down">
-                <i class="fas fa-arrow-down"></i> Faible
-              </span>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-value">182</div>
-              <div class="kpi-label">Routes / Arrond.</div>
-              <span class="kpi-trend up">
-                <i class="fas fa-arrow-up"></i> Élevé
-              </span>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-value">125</div>
-              <div class="kpi-label">Local. / Arrond.</div>
-              <span class="kpi-trend up">
-                <i class="fas fa-arrow-up"></i> Bon
-              </span>
-            </div>
-            <div class="kpi-card">
-              <div class="kpi-value">5</div>
-              <div class="kpi-label">École / Arrond.</div>
-              <span class="kpi-trend down">
-                <i class="fas fa-arrow-down"></i> Insuffisant
-              </span>
-            </div>
-          </div>
-        </div>
+/* ═══ DONNÉES en mémoire ═══ */
+let allItems = [];            // { feature, layer }
+let filteredItems = [];       // après filtrage
 
-        <!-- Comparaison -->
-        <div class="chart-card">
-          <h4><i class="fas fa-balance-scale"></i> Comparaison infrastructure</h4>
-          <div class="comparison-grid">
-            <div class="comparison-card" style="background: linear-gradient(135deg, #16a34a, #22c55e)">
-              <div class="comparison-number">20</div>
-              <div class="comparison-label">Écoles</div>
-            </div>
-            <div class="comparison-card" style="background: linear-gradient(135deg, #ec4899, #f472b6)">
-              <div class="comparison-number">499</div>
-              <div class="comparison-label">Localités</div>
-            </div>
-            <div class="comparison-card" style="background: linear-gradient(135deg, #f97316, #fb923c)">
+/* ═══ 1 – ZONE D'ÉTUDE ═══ */
+// Polygone de la commune de Pikine Nord (coordonnées réelles)
+const ZONE_COORDS = [
+  [14.7530, -17.4120],[14.7545, -17.4080],[14.7560, -17.4040],
+  [14.7580, -17.4000],[14.7600, -17.3960],[14.7620, -17.3930],
+  [14.7640, -17.3900],[14.7660, -17.3880],[14.7680, -17.3870],
+  [14.7700, -17.3875],[14.7715, -17.3890],[14.7725, -17.3910],
+  [14.7730, -17.3940],[14.7728, -17.3975],[14.7720, -17.4010],
+  [14.7705, -17.4045],[14.7685, -17.4075],[14.7665, -17.4095],
+  [14.7645, -17.4110],[14.7625, -17.4118],[14.7605, -17.4120],
+  [14.7585, -17.4118],[14.7565, -17.4112],[14.7545, -17.4120],
+  [14.7530, -17.4120]
+];
+
+function creerZone(coords){
+  lZone = L.polygon(coords, {
+    color:'#648cff', weight:3, dashArray:'10 6',
+    fillColor:'#648cff', fillOpacity:0.1
+  }).addTo(map);
+  zoneBounds = lZone.getBounds();
+  map.fitBounds(zoneBounds);
+}
+
+// Essayer le fichier GeoJSON d'abord ; si ça échoue → utiliser le polygone hardcodé
+fetch('data/pikine_nord.geojson')
+  .then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
+  .then(geo=>{
+    lZone = L.geoJSON(geo,{
+      style:{ color:'#648cff', weight:3, dashArray:'10 6', fillColor:'#648cff', fillOpacity:0.1 }
+    }).addTo(map);
+    zoneBounds = lZone.getBounds();
+    map.fitBounds(zoneBounds);
+  })
+  .catch(()=> creerZone(ZONE_COORDS));
+
+/* ═══ 2 – PARCELLAIRE ═══ */
+fetch('data/parcellaire_pikine_nord.geojson')
+  .then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
+  .then(geo=>{
+    lParcellaire = L.geoJSON(geo,{
+      style:{ color:'#e91e63', weight:1.2, fillColor:'#e91e63', fillOpacity:0.3 },
+      onEachFeature(feature, layer){
+        allItems.push({ feature, layer });
+        layer.on('click', e=>{ e.stopPropagation(); openPopup(feature, layer); });
+      }
+    }).addTo(map);
+    refreshSidebar();
+  })
+  .catch(()=>{ console.warn('parcellaire_pikine_nord.geojson introuvable'); refreshSidebar(); });
+
+/* ═══ 3 – BÂTIMENTS ═══ */
+fetch('data/Batiment_pikine_Nord.geojson')
+  .then(r=>{ if(!r.ok) throw new Error(); return r.json(); })
+  .then(geo=>{
+    lBatiment = L.geoJSON(geo,{
+      style:{ color:'#ff6b35', weight:1, fillColor:'#ff6b35', fillOpacity:0.5 }
+    }).addTo(map);
+  })
+  .catch(()=>console.warn('Batiment_pikine_Nord.geojson introuvable'));
+
+/* ═══ TOGGLE couches ═══ */
+function toggleCouche(name, on){
+  const tgt = name==='parcellaire'?lParcellaire : name==='batiment'?lBatiment : lZone;
+  if(!tgt) return;
+  on ? tgt.addTo(map) : map.removeLayer(tgt);
+}
+
+/* ═══ POPUP ═══ */
+function openPopup(feature, layer){
+  const p = feature.properties || {};
+  // on teste les noms de champs les plus courants dans les GeoJSON cadastraux sénégalais
+  const nicad = p.nicad || p.NICAD || p.Nicad || '—';
+  const lot   = p.num_lot || p.NumLot || p.numero_lot || p.Lot || '—';
+  const sect  = p.num_sect || p.section || p.Section || '004';
+  const comm  = p.nom_commune || p.commune || p.Commune || 'Pikine Nord';
+  const prop  = p.proprietaire || p.Proprietaire || '—';
+  const obs   = p.observations || p.Observations || '';
+
+  const html = `<div class="pop">
+    <h4><i class="fas fa-map-marker-alt" style="color:#e91e63"></i>&nbsp; Lot – ${lot}</h4>
+    <table>
+      <tr><td>NICAD</td><td>${nicad}</td></tr>
+      <tr><td>N° Lot</td><td>${lot}</td></tr>
+      <tr><td>Section</td><td>${sect}</td></tr>
+      <tr><td>Commune</td><td>${comm}</td></tr>
+      <tr><td>Propriétaire</td><td>${prop}</td></tr>
+      ${obs?'<tr><td>Obs</td><td>'+obs+'</td></tr>':''}
+    </table>
+  </div>`;
+  layer.bindPopup(html,{ maxWidth:260 }).openPopup();
+}
+
+/* ═══ SIDEBAR – stats + liste ═══ */
+function refreshSidebar(){
+  // Total et Lots sont déjà hardcodés (3 654 / 3 544), Section = 004
+  // On met à jour uniquement Parcelles (chargées depuis le GeoJSON)
+  document.getElementById('stParcelles').textContent = allItems.length.toLocaleString();
+  // À propos
+  document.getElementById('aboutParcelles').textContent = '3 654';
+  document.getElementById('aboutLots').textContent      = '3 544';
+
+  renderList();
+}
+
+/* ═══ LISTE sidebar ═══ */
+function renderList(filter=''){
+  const f = filter.toLowerCase();
+  filteredItems = allItems.filter(i=>{
+    const p = i.feature.properties || {};
+    return [p.nicad,p.NICAD,p.num_lot,p.NumLot,p.numero_lot,p.nom_commune,p.commune,p.proprietaire,p.Proprietaire]
+      .map(v=>(v||'').toString().toLowerCase()).some(v=>v.includes(f));
+  });
+
+  // limiter à 100 cartes pour la perfo
+  const show = filteredItems.slice(0,100);
+  const el = document.getElementById('plist');
+  el.innerHTML = show.map((item,idx)=>{
+    const p = item.feature.properties || {};
+    const lot  = p.num_lot || p.NumLot || p.numero_lot || p.Lot || '—';
+    const nicad= p.nicad || p.NICAD || '—';
+    const comm = p.nom_commune || p.commune || 'Pikine Nord';
+    const prop = p.proprietaire || p.Proprietaire || 'Non attribué';
+    return `<div class="p-card" onclick="zoomCard(${idx})">
+      <h5>Lot ${lot} <small style="color:#999;font-weight:400">${nicad}</small></h5>
+      <p><i class="fas fa-map-marker-alt"></i> ${comm}</p>
+      <p><i class="fas fa-user"></i> ${prop}</p>
+    </div>`;
+  }).join('');
+
+  if(filteredItems.length > 100)
+    el.innerHTML += `<p style="text-align:center;color:#aaa;font-size:12px;padding:5px;">… et ${filteredItems.length-100} autres</p>`;
+}
+
+function filterList(){ renderList(document.getElementById('searchInput').value); }
+
+function zoomCard(idx){
+  const item = filteredItems[idx];
+  if(!item) return;
+  try {
+    const b = item.layer.getBounds();
+    if(b.isValid()){ map.fitBounds(b,{ maxZoom:18, padding:[50,50] }); }
+  } catch(e){ /* marker sans bounds */ }
+  setTimeout(()=> openPopup(item.feature, item.layer), 350);
+}
+
+/* ═══ MODAL AJOUT ═══ */
+function openAdd(){ document.getElementById('addOverlay').classList.add('show'); }
+
+function saveAdd(){
+  const nicad = document.getElementById('fNicad').value.trim();
+  const lot   = document.getElementById('fLot').value.trim();
+  if(!nicad||!lot){ alert('NICAD et N° Lot sont obligatoires'); return; }
+
+  const lat = parseFloat(document.getElementById('fLat').value);
+  const lng = parseFloat(document.getElementById('fLng').value);
+
+  const feature = {
+    type:'Feature',
+    geometry: (lat&&lng) ? { type:'Point', coordinates:[lng,lat] } : null,
+    properties:{
+      nicad, num_lot:lot, nom_commune:'Pikine Nord', num_sect:'004',
+      proprietaire: document.getElementById('fProp').value.trim(),
+      observations: document.getElementById('fObs').value.trim()
+    }
+  };
+
+  let layer = null;
+  if(feature.geometry){
+    layer = L.marker([lat,lng]).addTo(map);
+    layer.on('click', e=>{ e.stopPropagation(); openPopup(feature,layer); });
+  }
+  allItems.push({ feature, layer });
+  refreshSidebar();
+  document.getElementById('addOverlay').classList.remove('show');
+  // vider les champs
+  ['fNicad','fLot','fProp','fLat','fLng','fObs'].forEach(k=>document.getElementById(k).value='');
+}
+
+/* ═══ EXPORT ═══ */
+function exportGeoJSON(){
+  const fc = { type:'FeatureCollection', features: allItems.map(i=>i.feature) };
+  const blob = new Blob([JSON.stringify(fc,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'parcelles_pikine_nord_export.geojson';
+  a.click();
+}
+
+/* ═══ FERMER overlays en cliquant dehors ═══ */
+['addOverlay','aboutOverlay','catalogOverlay'].forEach(id=>{
+  document.getElementById(id).addEventListener('click', function(e){ if(e.target===this) this.classList.remove('show'); });
+});
+</script>
+</body>
+</html>
