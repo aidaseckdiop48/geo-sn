@@ -318,13 +318,13 @@
       <div class="dash-section">
         <h3 class="dash-section-title">Cartes Cadastrales</h3>
         <div class="images-charts">
-          <div class="image-card">
-            <img src="img/numero.jpg" alt="Carte Numéros de Lots">
-            <div class="image-card-title">Distribution des Numéros de Lots</div>
+          <div class="chart-card">
+            <h3>📍 Numéros de Lots - Distribution</h3>
+            <canvas id="chartNumero" style="max-height:300px;"></canvas>
           </div>
-          <div class="image-card">
-            <img src="img/titre.jpg" alt="Carte Titres Fonciers">
-            <div class="image-card-title">Distribution des Titres Fonciers</div>
+          <div class="chart-card">
+            <h3>📍 Titres Fonciers - Distribution</h3>
+            <canvas id="chartTitre" style="max-height:300px;"></canvas>
           </div>
         </div>
       </div>
@@ -440,13 +440,13 @@ function creerZone(coords){
 }
 
 // Chargement GeoJSON Zone
-fetch('data/pikine_nord.geojson')
+fetch('data/Batiment_pikine_Nord.geojson')
   .then(r=>r.json())
   .then(geo=>{ lZone = L.geoJSON(geo,{ style:{ color:'#648cff', weight:3, dashArray:'10 6', fillColor:'#648cff', fillOpacity:0.1 } }).addTo(map); zoneBounds = lZone.getBounds(); })
   .catch(()=> creerZone(ZONE_COORDS));
 
 // Chargement GeoJSON Parcellaire
-fetch('data/Parcellaire_pikine_Nord.geojson')
+fetch('data/parcellaire_pikine_nord.geojson')
   .then(r=>r.json())
   .then(geo=>{
     lParcellaire = L.geoJSON(geo,{
@@ -567,6 +567,64 @@ function initCharts() {
 
   window.chartsOk = true;
 }
+</script>
+
+<script>
+// Graphiques Dashboard
+function initDashboardCharts() {
+  if(window.dashboardChartsOk) return;
+  
+  // Graphique Numéros de Lots
+  new Chart(document.getElementById('chartNumero').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Avec Numéro (2923 - 80%)', 'Sans Numéro (731 - 20%)'],
+      datasets: [{
+        data: [80, 20],
+        backgroundColor: ['#2196F3', '#FF9800'],
+        borderColor: ['#1976D2', '#F57C00'],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } }
+      }
+    }
+  });
+
+  // Graphique Titres Fonciers
+  new Chart(document.getElementById('chartTitre').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Titres Formalisés (110 - 3%)', 'Domaine National (3544 - 97%)'],
+      datasets: [{
+        data: [3, 97],
+        backgroundColor: ['#4CAF50', '#e91e63'],
+        borderColor: ['#388E3C', '#C2185B'],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } }
+      }
+    }
+  });
+
+  window.dashboardChartsOk = true;
+}
+
+// Initialiser quand on clique sur dashboard
+document.addEventListener('DOMContentLoaded', function() {
+  if(document.getElementById('dashboard').classList.contains('active')) {
+    initDashboardCharts();
+  }
+});
 </script>
 </body>
 </html>
