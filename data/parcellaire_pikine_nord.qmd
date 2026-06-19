@@ -1,10 +1,10 @@
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
 <qgis version="3.24.0-Tisler">
-  <identifier>limites_parcelles_Merge2_Mer</identifier>
+  <identifier>bati_pikine_nord</identifier>
   <parentidentifier></parentidentifier>
   <language>FRA</language>
   <type>dataset</type>
-  <title>limites_parcelles_Merge2_Mer</title>
+  <title>bati_pikine_nord</title>
   <abstract></abstract>
   <links/>
   <fees></fees>
