@@ -446,7 +446,7 @@ fetch('data/pikine_nord.geojson')
   .catch(()=> creerZone(ZONE_COORDS));
 
 // Chargement GeoJSON Parcellaire
-fetch('data/Parcellaire_pikine_Nord.geojson')
+fetch('data/parcellaire_pikine_Nord.geojson')
   .then(r=>r.json())
   .then(geo=>{
     lParcellaire = L.geoJSON(geo,{
@@ -454,7 +454,8 @@ fetch('data/Parcellaire_pikine_Nord.geojson')
       onEachFeature(feature, layer){ allItems.push({ feature, layer }); layer.on('click', e=>{ e.stopPropagation(); openPopup(feature, layer); }); }
     }).addTo(map);
     refreshSidebar();
-  });
+  })
+  .catch(()=>{ console.warn('GeoJSON introuvable'); refreshSidebar(); });
 
 function toggleCouche(name, on){
   const tgt = name==='parcellaire'?lParcellaire:lZone;
