@@ -445,10 +445,10 @@ fetch('data/pikine_nord.geojson')
   .then(geo=>{ lZone = L.geoJSON(geo,{ style:{ color:'#648cff', weight:3, dashArray:'10 6', fillColor:'#648cff', fillOpacity:0.1 } }).addTo(map); zoneBounds = lZone.getBounds(); })
   .catch(()=> creerZone(ZONE_COORDS));
 
-// Chargement GeoJSON Parcellaire - DIRECTEMENT DANS LE CODE
-const parcellesData = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"NICAD":"004-01","num_lot":"01"},"geometry":{"type":"Polygon","coordinates":[[[14.70,-17.40],[14.71,-17.40],[14.71,-17.41],[14.70,-17.41],[14.70,-17.40]]]}},{"type":"Feature","properties":{"NICAD":"004-02","num_lot":"02"},"geometry":{"type":"Polygon","coordinates":[[[14.71,-17.40],[14.72,-17.40],[14.72,-17.41],[14.71,-17.41],[14.71,-17.40]]]}},{"type":"Feature","properties":{"NICAD":"004-03","num_lot":"03"},"geometry":{"type":"Polygon","coordinates":[[[14.72,-17.40],[14.73,-17.40],[14.73,-17.41],[14.72,-17.41],[14.72,-17.40]]]}},{"type":"Feature","properties":{"NICAD":"004-04","num_lot":"04"},"geometry":{"type":"Polygon","coordinates":[[[14.73,-17.40],[14.74,-17.40],[14.74,-17.41],[14.73,-17.41],[14.73,-17.40]]]}},{"type":"Feature","properties":{"NICAD":"004-05","num_lot":"05"},"geometry":{"type":"Polygon","coordinates":[[[14.74,-17.40],[14.75,-17.40],[14.75,-17.41],[14.74,-17.41],[14.74,-17.40]]]}},{"type":"Feature","properties":{"NICAD":"004-06","num_lot":"06"},"geometry":{"type":"Polygon","coordinates":[[[14.75,-17.40],[14.76,-17.40],[14.76,-17.41],[14.75,-17.41],[14.75,-17.40]]]}},{"type":"Feature","properties":{"NICAD":"004-07","num_lot":"07"},"geometry":{"type":"Polygon","coordinates":[[[14.76,-17.40],[14.77,-17.40],[14.77,-17.41],[14.76,-17.41],[14.76,-17.40]]]}},{"type":"Feature","properties":{"NICAD":"004-08","num_lot":"08"},"geometry":{"type":"Polygon","coordinates":[[[14.77,-17.40],[14.78,-17.40],[14.78,-17.41],[14.77,-17.41],[14.77,-17.40]]]}}]};
-lParcellaire = L.geoJSON(parcellesData,{
-  style:{ color:'#ff6b00', weight:1.2, fillColor:'#ff9500', fillOpacity:0.4 },
+// Chargement GeoJSON Parcellaire
+const parcellesGeo = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"NICAD":"001"},"geometry":{"type":"Polygon","coordinates":[[[14.7,-17.4],[14.71,-17.4],[14.71,-17.41],[14.7,-17.41],[14.7,-17.4]]]}},{"type":"Feature","properties":{"NICAD":"002"},"geometry":{"type":"Polygon","coordinates":[[[14.71,-17.4],[14.72,-17.4],[14.72,-17.41],[14.71,-17.41],[14.71,-17.4]]]}},{"type":"Feature","properties":{"NICAD":"003"},"geometry":{"type":"Polygon","coordinates":[[[14.72,-17.4],[14.73,-17.4],[14.73,-17.41],[14.72,-17.41],[14.72,-17.4]]]}}]};
+lParcellaire = L.geoJSON(parcellesGeo, {
+  style: { color:'#ff6b00', weight:1.2, fillColor:'#ff9500', fillOpacity:0.4 },
   onEachFeature(feature, layer){ allItems.push({ feature, layer }); layer.on('click', e=>{ e.stopPropagation(); openPopup(feature, layer); }); }
 }).addTo(map);
 refreshSidebar();
