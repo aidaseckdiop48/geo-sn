@@ -440,13 +440,13 @@ function creerZone(coords){
 }
 
 // Chargement GeoJSON Zone
-fetch('data/pikine_nord.geojson')
+fetch('pikine_nord.geojson')
   .then(r=>r.json())
   .then(geo=>{ lZone = L.geoJSON(geo,{ style:{ color:'#648cff', weight:3, dashArray:'10 6', fillColor:'#648cff', fillOpacity:0.1 } }).addTo(map); zoneBounds = lZone.getBounds(); })
   .catch(()=> creerZone(ZONE_COORDS));
 
 // Chargement GeoJSON Parcellaire
-fetch('data/parcellaire_pikine_Nord.geojson')
+fetch('parcellaire_pikine_Nord.geojson')
   .then(r=>r.json())
   .then(geo=>{
     lParcellaire = L.geoJSON(geo,{
