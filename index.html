@@ -446,12 +446,16 @@ fetch('data/pikine_nord.geojson')
   .catch(()=> creerZone(ZONE_COORDS));
 
 // Chargement GeoJSON Parcellaire
-const parcellesGeo = {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"NICAD":"001"},"geometry":{"type":"Polygon","coordinates":[[[14.7,-17.4],[14.71,-17.4],[14.71,-17.41],[14.7,-17.41],[14.7,-17.4]]]}},{"type":"Feature","properties":{"NICAD":"002"},"geometry":{"type":"Polygon","coordinates":[[[14.71,-17.4],[14.72,-17.4],[14.72,-17.41],[14.71,-17.41],[14.71,-17.4]]]}},{"type":"Feature","properties":{"NICAD":"003"},"geometry":{"type":"Polygon","coordinates":[[[14.72,-17.4],[14.73,-17.4],[14.73,-17.41],[14.72,-17.41],[14.72,-17.4]]]}}]};
-lParcellaire = L.geoJSON(parcellesGeo, {
-  style: { color:'#ff6b00', weight:1.2, fillColor:'#ff9500', fillOpacity:0.4 },
-  onEachFeature(feature, layer){ allItems.push({ feature, layer }); layer.on('click', e=>{ e.stopPropagation(); openPopup(feature, layer); }); }
-}).addTo(map);
-refreshSidebar();
+fetch('data/parcellaire_pikine_Nord.geojson')
+  .then(r=>r.json())
+  .then(geo=>{
+    lParcellaire = L.geoJSON(geo,{
+      style:{ color:'#ff6b00', weight:1.2, fillColor:'#ff9500', fillOpacity:0.4 },
+      onEachFeature(feature, layer){ allItems.push({ feature, layer }); layer.on('click', e=>{ e.stopPropagation(); openPopup(feature, layer); }); }
+    }).addTo(map);
+    refreshSidebar();
+  })
+  .catch(()=>{ console.warn('GeoJSON introuvable'); refreshSidebar(); });
 
 function toggleCouche(name, on){
   const tgt = name==='parcellaire'?lParcellaire:lZone;
