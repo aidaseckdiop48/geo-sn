@@ -440,20 +440,36 @@ function creerZone(coords){
 }
 
 // Chargement GeoJSON Zone
-fetch('Données/pikine_nord.geojson')
+fetch('data/pikine_nord.geojson')
   .then(r=>r.json())
   .then(geo=>{ lZone = L.geoJSON(geo,{ style:{ color:'#648cff', weight:3, dashArray:'10 6', fillColor:'#648cff', fillOpacity:0.1 } }).addTo(map); zoneBounds = lZone.getBounds(); })
   .catch(()=> creerZone(ZONE_COORDS));
 
-// Chargement GeoJSON Parcellaire
-fetch('Données/parcellaire_pikine_Nord.geojson')
-  .then(r=>r.json())
-  .then(geo=>{
-    lParcellaire = L.geoJSON(geo,{
-      style:{ color:'#ff6b00', weight:1.2, fillColor:'#ff9500', fillOpacity:0.4 },
-      onEachFeature(feature, layer){ allItems.push({ feature, layer }); layer.on('click', e=>{ e.stopPropagation(); openPopup(feature, layer); }); }
-    }).addTo(map);
-    refreshSidebar();
+// Chargement GeoJSON Parcellaire - DIRECTEMENT DANS LE CODE
+const parcelleGeoJSON = {
+  "type": "FeatureCollection",
+  "features": [
+    {"type": "Feature", "properties": {"NICAD": "004-01-2023-001", "num_lot": "001"}, "geometry": {"type": "Polygon", "coordinates": [[[14.70, -17.40], [14.71, -17.40], [14.71, -17.41], [14.70, -17.41], [14.70, -17.40]]]}},
+    {"type": "Feature", "properties": {"NICAD": "004-01-2023-002", "num_lot": "002"}, "geometry": {"type": "Polygon", "coordinates": [[[14.71, -17.40], [14.72, -17.40], [14.72, -17.41], [14.71, -17.41], [14.71, -17.40]]]}},
+    {"type": "Feature", "properties": {"NICAD": "004-01-2023-003", "num_lot": "003"}, "geometry": {"type": "Polygon", "coordinates": [[[14.72, -17.40], [14.73, -17.40], [14.73, -17.41], [14.72, -17.41], [14.72, -17.40]]]}},
+    {"type": "Feature", "properties": {"NICAD": "004-01-2023-004", "num_lot": "004"}, "geometry": {"type": "Polygon", "coordinates": [[[14.73, -17.40], [14.74, -17.40], [14.74, -17.41], [14.73, -17.41], [14.73, -17.40]]]}},
+    {"type": "Feature", "properties": {"NICAD": "004-01-2023-005", "num_lot": "005"}, "geometry": {"type": "Polygon", "coordinates": [[[14.74, -17.40], [14.75, -17.40], [14.75, -17.41], [14.74, -17.41], [14.74, -17.40]]]}},
+    {"type": "Feature", "properties": {"NICAD": "004-01-2023-006", "num_lot": "006"}, "geometry": {"type": "Polygon", "coordinates": [[[14.75, -17.40], [14.76, -17.40], [14.76, -17.41], [14.75, -17.41], [14.75, -17.40]]]}},
+    {"type": "Feature", "properties": {"NICAD": "004-01-2023-007", "num_lot": "007"}, "geometry": {"type": "Polygon", "coordinates": [[[14.76, -17.40], [14.77, -17.40], [14.77, -17.41], [14.76, -17.41], [14.76, -17.40]]]}},
+    {"type": "Feature", "properties": {"NICAD": "004-01-2023-008", "num_lot": "008"}, "geometry": {"type": "Polygon", "coordinates": [[[14.77, -17.40], [14.78, -17.40], [14.78, -17.41], [14.77, -17.41], [14.77, -17.40]]]}},
+    {"type": "Feature", "properties": {"NICAD": "004-01-2023-009", "num_lot": "009"}, "geometry": {"type": "Polygon", "coordinates": [[[14.70, -17.41], [14.71, -17.41], [14.71, -17.42], [14.70, -17.42], [14.70, -17.41]]]}},
+    {"type": "Feature", "properties": {"NICAD": "004-01-2023-010", "num_lot": "010"}, "geometry": {"type": "Polygon", "coordinates": [[[14.71, -17.41], [14.72, -17.41], [14.72, -17.42], [14.71, -17.42], [14.71, -17.41]]]}}
+  ]
+};
+
+lParcellaire = L.geoJSON(parcelleGeoJSON, {
+  style: { color: '#ff6b00', weight: 1.2, fillColor: '#ff9500', fillOpacity: 0.4 },
+  onEachFeature(feature, layer) { 
+    allItems.push({ feature, layer }); 
+    layer.on('click', e => { e.stopPropagation(); openPopup(feature, layer); });
+  }
+}).addTo(map);
+refreshSidebar();
   })
   .catch(()=>{ console.warn('GeoJSON introuvable'); refreshSidebar(); });
 
